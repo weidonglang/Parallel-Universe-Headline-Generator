@@ -1,0 +1,221 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>平行宇宙头条生成器</title>
+    <style>
+        :root {
+            --bg: #f4efe4;
+            --panel: rgba(255, 250, 242, 0.82);
+            --ink: #1b1d21;
+            --accent: #d94f2b;
+            --accent-2: #176087;
+            --line: rgba(27, 29, 33, 0.12);
+        }
+
+        * {
+            box-sizing: border-box;
+        }
+
+        body {
+            margin: 0;
+            min-height: 100vh;
+            font-family: "Microsoft YaHei", sans-serif;
+            color: var(--ink);
+            background:
+                    radial-gradient(circle at top left, rgba(217, 79, 43, 0.22), transparent 28%),
+                    radial-gradient(circle at bottom right, rgba(23, 96, 135, 0.22), transparent 30%),
+                    linear-gradient(135deg, #f8f3ea, #efe5d2 55%, #f6eee3);
+            display: grid;
+            place-items: center;
+            padding: 24px;
+        }
+
+        .board {
+            width: min(920px, 100%);
+            background: var(--panel);
+            border: 1px solid var(--line);
+            border-radius: 28px;
+            padding: 28px;
+            backdrop-filter: blur(12px);
+            box-shadow: 0 20px 70px rgba(68, 47, 32, 0.12);
+        }
+
+        .eyebrow {
+            display: inline-block;
+            padding: 6px 12px;
+            border-radius: 999px;
+            background: rgba(217, 79, 43, 0.12);
+            color: var(--accent);
+            font-weight: 700;
+            letter-spacing: 0.08em;
+        }
+
+        h1 {
+            margin: 18px 0 10px;
+            font-size: clamp(2rem, 4vw, 4.2rem);
+            line-height: 1;
+        }
+
+        .sub {
+            margin: 0 0 24px;
+            max-width: 620px;
+            font-size: 1.05rem;
+            line-height: 1.7;
+        }
+
+        .controls {
+            display: flex;
+            gap: 12px;
+            flex-wrap: wrap;
+            margin-bottom: 24px;
+        }
+
+        input, button {
+            border-radius: 16px;
+            border: 1px solid var(--line);
+            padding: 14px 18px;
+            font-size: 1rem;
+        }
+
+        input {
+            flex: 1 1 320px;
+            background: rgba(255, 255, 255, 0.7);
+        }
+
+        button {
+            cursor: pointer;
+            font-weight: 700;
+            color: #fff;
+            background: linear-gradient(135deg, var(--accent), #ef7a32);
+            box-shadow: 0 10px 24px rgba(217, 79, 43, 0.24);
+        }
+
+        .card {
+            padding: 24px;
+            border-radius: 24px;
+            background: rgba(255, 255, 255, 0.68);
+            border: 1px solid rgba(27, 29, 33, 0.08);
+        }
+
+        .headline {
+            margin: 0;
+            font-size: clamp(1.5rem, 2.4vw, 2.5rem);
+            line-height: 1.25;
+        }
+
+        .grid {
+            margin-top: 18px;
+            display: grid;
+            grid-template-columns: repeat(auto-fit, minmax(220px, 1fr));
+            gap: 14px;
+        }
+
+        .block {
+            padding: 18px;
+            border-radius: 18px;
+            background: rgba(244, 239, 228, 0.86);
+        }
+
+        .block strong {
+            display: block;
+            margin-bottom: 10px;
+            color: var(--accent-2);
+        }
+
+        .tags {
+            margin-top: 18px;
+            display: flex;
+            gap: 10px;
+            flex-wrap: wrap;
+        }
+
+        .tag {
+            padding: 8px 12px;
+            border-radius: 999px;
+            background: rgba(23, 96, 135, 0.1);
+            color: var(--accent-2);
+            font-weight: 700;
+        }
+
+        @media (max-width: 640px) {
+            .board {
+                padding: 20px;
+            }
+
+            button, input {
+                width: 100%;
+            }
+        }
+    </style>
+</head>
+<body>
+<main class="board">
+    <span class="eyebrow">PARALLEL UNIVERSE LIVE</span>
+    <h1>平行宇宙头条生成器</h1>
+    <p class="sub">输入名字、宠物、物件、会议、抽象概念都可以，系统会先判断它更像什么，再生成一条更贴脸的一本正经离谱快讯。</p>
+
+    <section class="controls">
+        <input id="topicInput" type="text" placeholder="例如：老王、小橘猫、咖啡机、周一早会、自由">
+        <button id="generateButton">生成离谱头条</button>
+    </section>
+
+    <section class="card">
+        <h2 id="headline" class="headline">载入中...</h2>
+        <div class="grid">
+            <article class="block">
+                <strong>现场追踪</strong>
+                <p id="scoop"></p>
+            </article>
+            <article class="block">
+                <strong>当事人发言</strong>
+                <p id="quote"></p>
+            </article>
+            <article class="block">
+                <strong>后续建议</strong>
+                <p id="action"></p>
+            </article>
+        </div>
+        <div id="tags" class="tags"></div>
+    </section>
+</main>
+
+<script>
+    const topicInput = document.getElementById('topicInput');
+    const generateButton = document.getElementById('generateButton');
+    const headline = document.getElementById('headline');
+    const scoop = document.getElementById('scoop');
+    const quote = document.getElementById('quote');
+    const action = document.getElementById('action');
+    const tags = document.getElementById('tags');
+
+    async function loadNews(topic = '') {
+        const response = await fetch(`/api/universe-news?topic=${encodeURIComponent(topic)}`);
+        const data = await response.json();
+
+        headline.textContent = data.headline;
+        scoop.textContent = data.scoop;
+        quote.textContent = data.quote;
+        action.textContent = data.action;
+        tags.innerHTML = '';
+
+        data.tags.forEach((tagText) => {
+            const tag = document.createElement('span');
+            tag.className = 'tag';
+            tag.textContent = `#${tagText}`;
+            tags.appendChild(tag);
+        });
+    }
+
+    generateButton.addEventListener('click', () => loadNews(topicInput.value));
+    topicInput.addEventListener('keydown', (event) => {
+        if (event.key === 'Enter') {
+            loadNews(topicInput.value);
+        }
+    });
+
+    loadNews('今天的你');
+</script>
+</body>
+</html>
